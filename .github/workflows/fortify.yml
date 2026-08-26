@@ -1,0 +1,36 @@
+name: Fortify SAST (ScanCentral)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  fortify-sast-scancentral:
+    runs-on: [self-hosted]   # make sure your runner labels include "windows"
+
+    env:
+      SCANCENTRAL_BUILD_OPTS: "-bt none"
+      BUILD_ID: "1"
+      SSC_APP: "scancentral"
+      SSC_PV: "10000"
+      SSC_URL: "https://localhost:8443/ssc"
+      SAST_URL: "https://localhost:8444/scancentral-ctrl"
+      SSC_TOKEN: "ff170dad-1f45-4833-98d3-22087a117a63"  # store in GitHub secrets
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Verify ScanCentral is available (optional)
+        shell: cmd
+        run: |
+          where scancentral*
+          scancentral -version
+
+      - name: Run ScanCentral (start + upload)
+        shell: cmd
+        run: |
+          echo Starting ScanCentral scan for version %SSC_PV% ...
+          scancentral -debug -url %SAST_URL% -ssctoken %SSC_TOKEN% start -upload -versionid %SSC_PV% %SCANCENTRAL_BUILD_OPTS% -ssc-upload-token %SSC_TOKEN%
